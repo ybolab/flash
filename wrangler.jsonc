@@ -3,7 +3,7 @@
   "name": "flash-y-bo",
   "compatibility_date": "2026-11-01",
   "assets": {
-    "directory": "./flasher",
+    "directory": "./site",
     "not_found_handling": "404-page"
   }
 }

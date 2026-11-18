@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>y.bo 固件刷写</title>
+<script type="module" src="esp-web-tools/install-button.js"></script>
+<style>
+body{font:15px system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 16px;color:#222}
+code{background:#eee;padding:1px 4px;border-radius:3px}
+li{margin:6px 0}
+label{display:block;margin:10px 0}
+select{font:inherit;padding:4px 8px;margin-left:8px;min-width:240px}
+#unsupported{color:#b60}
+</style>
+</head>
+<body>
+<h1>y.bo 固件刷写</h1>
+<p>用桌面版 Chrome 或 Edge 经 USB 串口刷写。先选芯片，再选固件。</p>
+<label>芯片<select id="chip"></select></label>
+<label>固件<select id="fw"></select></label>
+<p id="unsupported" hidden>该芯片暂不支持网页刷写。</p>
+<esp-web-install-button id="install" hidden>
+  <span slot="unsupported">浏览器不支持 Web Serial，请用桌面版 Chrome 或 Edge。</span>
+  <span slot="not-allowed">需要 HTTPS 或 localhost 才能使用串口。</span>
+</esp-web-install-button>
+<h2>步骤</h2>
+<ol id="notes"></ol>
+<p>串口日志：连接后在菜单里选 <b>Logs &amp; Console</b>（115200）。</p>
+<script>
+const $ = id => document.getElementById(id);
+let chips = [];
+
+function opts(sel, items, pick) {
+  sel.innerHTML = items.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+  if (items.some(i => i.id === pick)) sel.value = pick;
+}
+
+function show() {
+  const chip = chips.find(c => c.id === $('chip').value);
+  const fw = chip.firmware.find(f => f.id === $('fw').value);
+  const ok = chip.flasher === 'esp-web-tools' && fw;
+  $('unsupported').hidden = ok;
+  $('install').hidden = !ok;
+  if (ok) $('install').manifest = fw.manifest;
+  $('notes').innerHTML = (fw?.notes || []).map(n => `<li>${n}</li>`).join('');
+  const q = new URLSearchParams({chip: chip.id, fw: fw?.id || ''});
+  history.replaceState(null, '', '?' + q);
+}
+
+function pickChip(fwPick) {
+  const chip = chips.find(c => c.id === $('chip').value);
+  opts($('fw'), chip.firmware, fwPick);
+  show();
+}
+
+(async () => {
+  chips = (await (await fetch('firmware.json', {cache: 'no-store'})).json()).chips;
+  const q = new URLSearchParams(location.search);
+  opts($('chip'), chips, q.get('chip'));
+  pickChip(q.get('fw'));
+  $('chip').onchange = () => pickChip();
+  $('fw').onchange = show;
+})();
+</script>
+</body>
+</html>

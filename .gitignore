@@ -1,7 +1,7 @@
 .tmp/
-mcu-test/build/
-mcu-test/managed_components/
-mcu-test/sdkconfig
-mcu-test/sdkconfig.old
-mcu-test/dependencies.lock
 .wrangler/
+firmware/*/build/
+firmware/*/managed_components/
+firmware/*/sdkconfig
+firmware/*/sdkconfig.old
+firmware/*/dependencies.lock

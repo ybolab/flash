@@ -16,8 +16,9 @@ select{font:inherit;padding:4px 8px;margin-left:8px;min-width:240px}
 </head>
 <body>
 <h1>y.bo 固件刷写</h1>
-<p>用桌面版 Chrome 或 Edge 经 USB 串口刷写芯片测试固件。</p>
+<p>用桌面版 Chrome 或 Edge 经 USB 串口刷写。先选芯片，再选固件。</p>
 <label>芯片<select id="chip"></select></label>
+<label>固件<select id="fw"></select></label>
 <p id="unsupported" hidden>该芯片暂不支持网页刷写。</p>
 <esp-web-install-button id="install" hidden>
   <span slot="unsupported">浏览器不支持 Web Serial，请用桌面版 Chrome 或 Edge。</span>
@@ -35,22 +36,31 @@ function opts(sel, items, pick) {
   if (items.some(i => i.id === pick)) sel.value = pick;
 }
 
+const curChip = () => chips.find(c => c.id === $('chip').value);
+
 function show() {
-  const chip = chips.find(c => c.id === $('chip').value);
-  const ok = chip.flasher === 'esp-web-tools';
+  const chip = curChip();
+  const fw = chip.firmware.find(f => f.id === $('fw').value);
+  const ok = chip.flasher === 'esp-web-tools' && !!fw;
   $('unsupported').hidden = ok;
   $('install').hidden = !ok;
-  if (ok) $('install').manifest = chip.manifest;
-  $('notes').innerHTML = (chip.notes || []).map(n => `<li>${n}</li>`).join('');
-  history.replaceState(null, '', '?chip=' + chip.id);
+  if (ok) $('install').manifest = fw.manifest;
+  $('notes').innerHTML = (fw?.notes || []).map(n => `<li>${n}</li>`).join('');
+  history.replaceState(null, '', '?' + new URLSearchParams({chip: chip.id, fw: fw?.id || ''}));
+}
+
+function pickChip(fwPick) {
+  opts($('fw'), curChip().firmware, fwPick);
+  show();
 }
 
 (async () => {
   chips = (await (await fetch('firmware.json', {cache: 'no-store'})).json()).chips;
   const q = new URLSearchParams(location.search);
   opts($('chip'), chips, q.get('chip'));
-  show();
-  $('chip').onchange = show;
+  pickChip(q.get('fw'));
+  $('chip').onchange = () => pickChip();
+  $('fw').onchange = show;
 })();
 </script>
 </body>

@@ -1,0 +1,19 @@
+menu "Key Box MCU test"
+
+    config KB_LED_GPIO
+        int "Status LED GPIO"
+        default 7
+        help
+            Key Box D11 is on IO7 (active high).
+
+    config KB_BUTTON_GPIO
+        int "Service button GPIO"
+        default 9
+        help
+            Key Box SW2 SERVICE / BOOT on IO9 (active low). Hold 5 s to clear Wi-Fi and re-provision.
+
+    config KB_PROV_POP
+        string "BLE provisioning proof of possession"
+        default "keybox123"
+
+endmenu

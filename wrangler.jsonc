@@ -1,0 +1,9 @@
+{
+  // Static-assets-only Worker serving the Web Serial flasher page and firmware image.
+  "name": "flash-y-bo",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./flasher",
+    "not_found_handling": "404-page"
+  }
+}

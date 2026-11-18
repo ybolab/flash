@@ -1,0 +1,7 @@
+.tmp/
+mcu-test/build/
+mcu-test/managed_components/
+mcu-test/sdkconfig
+mcu-test/sdkconfig.old
+mcu-test/dependencies.lock
+.wrangler/

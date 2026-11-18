@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Key Box MCU 测试</title>
+<style>
+body{font:14px system-ui,sans-serif;margin:0;background:#f4f5f7;color:#222}
+header{background:#123;color:#fff;padding:12px 16px;font-size:18px}
+main{max-width:860px;margin:auto;padding:12px}
+section{background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 2px #0002}
+h2{font-size:15px;margin:0 0 8px}
+table{border-collapse:collapse;width:100%}
+td,th{padding:4px 6px;border-bottom:1px solid #eee;text-align:left}
+button,select{font:inherit;padding:4px 10px;margin:2px}
+.hi{color:#080;font-weight:bold}.lo{color:#888}
+.ok{color:#080}.warn{color:#b60}
+small{color:#666}
+</style>
+</head>
+<body>
+<header>Key Box MCU 测试 · <span id="host"></span></header>
+<main>
+<section>
+<h2>芯片 / 网络</h2>
+<table id="info"></table>
+</section>
+<section>
+<h2>状态灯 IO7 / SERVICE 按键 IO9</h2>
+<p>LED：<b id="led"></b>
+<button onclick="led('on')">亮</button><button onclick="led('off')">灭</button><button onclick="led('auto')">自动</button></p>
+<p>按键：<b id="btn"></b> <small>按住 5 s 清除 Wi-Fi 并回到蓝牙配网</small></p>
+</section>
+<section>
+<h2>GPIO</h2>
+<small>输出会直接驱动板上网络（例如 IO10 = DO_EN）；裸模组测试时可随意使用。</small>
+<table id="gpio"></table>
+</section>
+<section>
+<h2>维护</h2>
+<button onclick="post('/api/reboot','重启？')">重启</button>
+<button onclick="post('/api/reprovision','清除 Wi-Fi 并重新蓝牙配网？')">重新配网</button>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const RESET=['未知','上电','外部','软件','异常','中断看门狗','任务看门狗','其他看门狗','深睡','掉电','SDIO','USB','JTAG','eFuse','电源毛刺','CPU 锁死'];
+const MODES=[['-','未用'],['in','输入'],['pu','输入上拉'],['pd','输入下拉'],['o0','输出 0'],['o1','输出 1']];
+async function j(u,o){const r=await fetch(u,o);if(!r.ok)throw new Error(await r.text());return r.json()}
+async function status(){
+  try{
+    const s=await j('/api/status');
+    $('host').textContent=s.host;
+    const rows=[
+      ['芯片',`${s.chip} ${s.rev}，${s.cores} 核，Flash ${s.flash_mb} MB`],
+      ['MAC',s.mac],['固件',`IDF ${s.idf}，编译 ${s.app}`],
+      ['运行',`${s.uptime_s} s，复位原因：${RESET[s.reset]||s.reset}`],
+      ['内存',`空闲 ${s.heap} B，最低 ${s.heap_min} B`],['片温',`${s.temp_c} °C`],
+      ['蓝牙名',s.ble],['Wi-Fi',`${s.ssid}，${s.rssi} dBm，信道 ${s.channel}`],['IP',s.ip],
+    ];
+    $('info').innerHTML=rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('');
+    $('led').textContent=`${s.led}（电平 ${s.led_level}）`;
+    $('btn').innerHTML=s.button?'<span class=lo>松开</span>':'<span class=hi>按下</span>';
+  }catch(e){$('host').textContent='离线'}
+}
+function gpioRow(g){
+  const opts=MODES.map(m=>`<option value="${m[0]}"${m[0]==g.mode?' selected':''}>${m[1]}</option>`).join('');
+  const lv=g.level<0?'':g.level?'<span class=hi>1</span>':'<span class=lo>0</span>';
+  return `<tr><td>IO${g.pin}</td><td><small>${g.note}</small></td><td><select onchange="setPin(${g.pin},this.value)">${opts}</select></td><td>${lv}</td></tr>`;
+}
+async function gpio(){
+  if(document.activeElement&&document.activeElement.tagName=='SELECT')return;
+  try{const g=await j('/api/gpio');$('gpio').innerHTML='<tr><th>脚</th><th>Key Box 用途</th><th>模式</th><th>电平</th></tr>'+g.map(gpioRow).join('')}catch(e){}
+}
+async function setPin(p,m){await j(`/api/gpio?pin=${p}&mode=${m}`,{method:'POST'});document.activeElement.blur();gpio()}
+async function led(m){await j('/api/led?mode='+m,{method:'POST'});status()}
+async function post(u,q){if(confirm(q)){await fetch(u,{method:'POST'});alert('已发送，设备将重启')}}
+status();gpio();setInterval(()=>{status();gpio()},1000);
+</script>
+</body>
+</html>

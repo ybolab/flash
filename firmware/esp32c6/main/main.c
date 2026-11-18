@@ -18,7 +18,7 @@
 
 #include "app.h"
 
-static const char *TAG = "keybox";
+static const char *TAG = "c6test";
 
 #define LED_GPIO    CONFIG_KB_LED_GPIO
 #define BUTTON_GPIO CONFIG_KB_BUTTON_GPIO
@@ -167,8 +167,8 @@ void app_main(void)
 
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
-    snprintf(g_service_name, sizeof(g_service_name), "KEYBOX_%02X%02X%02X", mac[3], mac[4], mac[5]);
-    snprintf(g_hostname, sizeof(g_hostname), "keybox-%02x%02x%02x", mac[3], mac[4], mac[5]);
+    snprintf(g_service_name, sizeof(g_service_name), "ESP32C6_%02X%02X%02X", mac[3], mac[4], mac[5]);
+    snprintf(g_hostname, sizeof(g_hostname), "esp32c6-%02x%02x%02x", mac[3], mac[4], mac[5]);
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
@@ -183,7 +183,7 @@ void app_main(void)
 
     ESP_ERROR_CHECK(mdns_init());
     mdns_hostname_set(g_hostname);
-    mdns_instance_name_set("Key Box MCU test");
+    mdns_instance_name_set("ESP32-C6 MCU test");
     mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
 
     wifi_prov_mgr_config_t pcfg = {
@@ -195,7 +195,7 @@ void app_main(void)
     bool provisioned = false;
     ESP_ERROR_CHECK(wifi_prov_mgr_is_provisioned(&provisioned));
 
-    ESP_LOGI(TAG, "Key Box MCU test, BLE name %s, host %s", g_service_name, g_hostname);
+    ESP_LOGI(TAG, "ESP32-C6 MCU test, BLE name %s, host %s", g_service_name, g_hostname);
     if (!provisioned) {
         g_net_state = NET_PROVISIONING;
         ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(WIFI_PROV_SECURITY_1, CONFIG_KB_PROV_POP,

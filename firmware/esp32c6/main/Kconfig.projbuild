@@ -1,4 +1,4 @@
-menu "Key Box MCU test"
+menu "ESP32-C6 MCU test"
 
     config KB_LED_GPIO
         int "Status LED GPIO"
@@ -14,6 +14,6 @@ menu "Key Box MCU test"
 
     config KB_PROV_POP
         string "BLE provisioning proof of possession"
-        default "keybox123"
+        default "esp32c6"
 
 endmenu

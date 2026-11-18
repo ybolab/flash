@@ -4,21 +4,14 @@
       "id": "esp32c6",
       "name": "ESP32-C6",
       "flasher": "esp-web-tools",
-      "firmware": [
-        {
-          "id": "keybox-mcu-test",
-          "name": "Key Box MCU 测试",
-          "product": "Key Box",
-          "manifest": "fw/esp32c6/keybox-mcu-test/manifest.json",
-          "notes": [
-            "USB 接上模组（IO12 / IO13 原生 USB 串口），点 <b>CONNECT</b>，选 <code>USB JTAG/serial debug unit</code>。",
-            "连不上时：按住 SERVICE（IO9 / BOOT），点一下 RESET（EN），松开 SERVICE，再连接。",
-            "选 <b>Install</b>，建议勾选擦除。完成后按 RESET 运行。",
-            "LED（IO7）每秒短闪一次 = 等待蓝牙配网。手机装 Espressif 的 <b>ESP BLE Provisioning</b> App，选设备 <code>KEYBOX_xxxxxx</code>，PoP 填 <code>keybox123</code>，选 Wi-Fi 并输入密码。",
-            "LED 快闪 = 正在连 Wi-Fi，常亮 = 已连上。浏览器打开 <code>http://keybox-xxxxxx.local/</code> 或串口日志里的 IP，即可看到测试页面。",
-            "重新配网：网页上点“重新配网”，或按住 SERVICE 5 秒。"
-          ]
-        }
+      "manifest": "fw/esp32c6/manifest.json",
+      "notes": [
+        "USB 接上模组（IO12 / IO13 原生 USB 串口），点 <b>CONNECT</b>，选 <code>USB JTAG/serial debug unit</code>。",
+        "连不上时：按住 BOOT（IO9，Key Box 上为 SERVICE），点一下 RESET（EN），松开 BOOT，再连接。",
+        "选 <b>Install</b>，建议勾选擦除。完成后按 RESET 运行。",
+        "LED（IO7）每秒短闪一次 = 等待蓝牙配网。手机装 Espressif 的 <b>ESP BLE Provisioning</b> App，选设备 <code>ESP32C6_xxxxxx</code>，PoP 填 <code>esp32c6</code>，选 Wi-Fi 并输入密码。",
+        "LED 快闪 = 正在连 Wi-Fi，常亮 = 已连上。浏览器打开 <code>http://esp32c6-xxxxxx.local/</code> 或串口日志里的 IP，即可看到测试页面。",
+        "重新配网：网页上点“重新配网”，或按住 BOOT 5 秒。"
       ]
     }
   ]

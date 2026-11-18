@@ -1,11 +1,11 @@
 {
-  "name": "Key Box MCU test",
+  "name": "ESP32-C6 MCU test",
   "version": "0.1.0",
   "new_install_prompt_erase": true,
   "builds": [
     {
       "chipFamily": "ESP32-C6",
-      "parts": [{ "path": "keybox-mcu-test.bin", "offset": 0 }]
+      "parts": [{ "path": "esp32c6.bin", "offset": 0 }]
     }
   ]
 }

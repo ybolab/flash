@@ -1,0 +1,75 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ['site/**', 'worker/**', '.github/workflows/deploy.yml']
+  workflow_dispatch:
+
+concurrency: deploy
+
+env:
+  CONSOLE: https://a.app
+  PROJECT: flash
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to a.app
+        env:
+          PAT: ${{ secrets.A_APP_TOKEN }}
+        run: |
+          set -euo pipefail
+          api() { curl -sS --fail-with-body -H "Authorization: Bearer $PAT" "$@"; }
+
+          # Project with one R2 bucket "site"; created on the first run.
+          if ! api -o project.json "$CONSOLE/api/projects/$PROJECT" 2>/dev/null; then
+            api -X POST "$CONSOLE/api/projects" -H 'content-type: application/json' \
+              -d "{\"name\":\"flash\",\"id\":\"$PROJECT\",\"resources\":[{\"type\":\"r2\",\"name\":\"site\"}]}" >/dev/null
+          fi
+          for i in $(seq 1 60); do
+            api -o project.json "$CONSOLE/api/projects/$PROJECT"
+            status=$(jq -r .data.status project.json)
+            [ "$status" = active ] && break
+            [ "$status" = failed ] && { jq .data.error project.json; exit 1; }
+            sleep 5
+          done
+          [ "$status" = active ] || { echo "project not active: $status"; exit 1; }
+          GW=$(jq -r .data.endpoints.rest project.json)
+
+          # Short-lived R2 key for this run, revoked on exit.
+          api -o key.json -X POST "$CONSOLE/api/projects/$PROJECT/keys" -H 'content-type: application/json' \
+            -d '{"name":"gh-deploy","scopes":["r2:write"]}'
+          KEY=$(jq -r .data.key key.json); rm key.json
+          echo "::add-mask::$KEY"
+          revoke() {
+            api "$CONSOLE/api/projects/$PROJECT/keys" | jq -r '.data[] | select(.name == "gh-deploy") | .id' |
+              while read -r id; do api -X DELETE "$CONSOLE/api/projects/$PROJECT/keys/$id" >/dev/null || true; done
+          }
+          trap revoke EXIT
+          r2() { curl -sS --fail-with-body -H "Authorization: Bearer $KEY" "$@"; }
+
+          # Upload site/, then delete objects that are no longer in it.
+          (cd site && find . -type f | sed 's#^\./##' | sort) > files.txt
+          while read -r f; do
+            r2 -X PUT --data-binary "@site/$f" -H 'content-type: application/octet-stream' \
+              "$GW/r2/site/$f" >/dev/null
+            echo "uploaded $f"
+          done < files.txt
+          cursor=""
+          while :; do
+            r2 -o list.json "$GW/r2/site?limit=1000${cursor:+&cursor=$cursor}"
+            jq -r '.data.objects[].key' list.json | sort | comm -23 - files.txt | while read -r k; do
+              r2 -X DELETE "$GW/r2/site/$k" >/dev/null && echo "deleted $k"
+            done
+            cursor=$(jq -r '.data.cursor // empty' list.json)
+            [ -n "$cursor" ] || break
+          done
+
+          # Worker
+          tar czf app.tgz -C worker index.js
+          api -X PUT --data-binary @app.tgz -H 'content-type: application/gzip' \
+            "$CONSOLE/api/projects/$PROJECT/app?compatibility_date=2026-11-01" | jq -r '.data.url // .data'
